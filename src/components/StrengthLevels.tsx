@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import {
-  getStrengthLevel,
-  getLevelBadgeClass,
+  convert1RMto5RM,
   STRENGTH_STANDARDS,
   REFERENCE_BODYWEIGHT_KG,
   type StrengthLevelName,
@@ -14,38 +13,68 @@ interface Props {
 
 const LEVEL_ORDER: StrengthLevelName[] = ['beginner', 'novice', 'intermediate', 'advanced', 'elite']
 
+const LEVEL_LABELS: Record<string, string> = {
+  beginner: 'Mới tập',
+  novice: 'Tập luyện',
+  intermediate: 'Trung cấp',
+  advanced: 'Cao cấp',
+  elite: 'Elite',
+}
+
+function getThresholds(exercise: string, bodyweight: number): Record<string, number> {
+  const raw = STRENGTH_STANDARDS[exercise]
+  if (!raw) return {}
+  const ratio = bodyweight / REFERENCE_BODYWEIGHT_KG
+  const result: Record<string, number> = {}
+  for (const key of LEVEL_ORDER) {
+    result[key] = Math.round(convert1RMto5RM(raw[key] * ratio) * 10) / 10
+  }
+  return result
+}
+
 export default function StrengthLevels({ exerciseStats }: Props) {
   const [bodyweight, setBodyweight] = useState(REFERENCE_BODYWEIGHT_KG)
+  const [goalLevel, setGoalLevel] = useState<StrengthLevelName>('intermediate')
+  const [sortMode, setSortMode] = useState<'best' | 'worst' | 'weight'>('best')
+  const [showAll, setShowAll] = useState(false)
 
   if (!exerciseStats || exerciseStats.length === 0) {
     return (
       <div className="bg-bg-card rounded-lg p-4 border border-border">
-        <h2 className="font-display text-xl text-text-primary mb-4">Strength Levels</h2>
+        <h2 className="font-display text-xl text-text-primary mb-4">Mức sức mạnh</h2>
         <div className="h-64 bg-bg-card-hover rounded animate-pulse flex items-center justify-center text-text-muted text-sm">
-          No data
+          Không có dữ liệu
         </div>
       </div>
     )
   }
 
-  const matched = exerciseStats
-    .filter((e) => STRENGTH_STANDARDS[e.name] && e.best1RM > 0)
-    .sort((a, b) => b.best1RM - a.best1RM)
+  const matched = exerciseStats.filter(
+    (e) => STRENGTH_STANDARDS[e.name] && e.best5RM > 0,
+  )
 
-  const unmatched = exerciseStats
-    .filter((e) => !STRENGTH_STANDARDS[e.name] && e.best1RM > 0)
-    .sort((a, b) => (b.best1RM / (bodyweight || 75)) - (a.best1RM / (bodyweight || 75)))
+  const withProgress = matched.map((ex) => {
+    const thresholds = getThresholds(ex.name, bodyweight)
+    const goalThreshold = thresholds[goalLevel] ?? 0
+    const progress = goalThreshold > 0 ? Math.min((ex.best5RM / goalThreshold) * 100, 100) : 0
+    return { ...ex, _progress: progress }
+  })
 
-  const ref = STRENGTH_STANDARDS
-  const ratio = bodyweight / REFERENCE_BODYWEIGHT_KG
+  const sorted = [...withProgress].sort((a, b) =>
+    sortMode === 'best' ? b._progress - a._progress
+      : sortMode === 'worst' ? a._progress - b._progress
+      : b.best5RM - a.best5RM,
+  )
+  const display = showAll ? sorted : sorted.slice(0, 15)
+  const maxProgress = Math.max(...display.map((e) => e._progress), 1)
 
   return (
     <div className="bg-bg-card rounded-lg p-4 border border-border">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="font-display text-xl text-text-primary">Strength Levels</h2>
-        <div className="flex items-center gap-2 text-sm">
+        <h2 className="font-display text-xl text-text-primary">Mức sức mạnh</h2>
+        <div className="flex items-center gap-2 text-sm flex-wrap">
           <label htmlFor="bw-input" className="text-text-muted">
-            Bodyweight (kg):
+            Cân nặng (kg):
           </label>
           <input
             id="bw-input"
@@ -56,101 +85,97 @@ export default function StrengthLevels({ exerciseStats }: Props) {
             onChange={(e) => setBodyweight(Math.max(30, Math.min(200, parseFloat(e.target.value) || 75)))}
             className="w-16 bg-bg-base text-text-primary border border-border rounded px-2 py-1 text-sm text-center"
           />
+          <div className="flex bg-bg-base rounded-lg p-0.5 gap-0.5">
+            {LEVEL_ORDER.map((lvl) => (
+              <button
+                key={lvl}
+                onClick={() => setGoalLevel(lvl)}
+                className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
+                  goalLevel === lvl
+                    ? 'bg-accent text-white'
+                    : 'text-text-muted hover:text-text-primary'
+                }`}
+              >
+                {LEVEL_LABELS[lvl]}
+              </button>
+            ))}
+          </div>
+          <div className="flex bg-bg-base rounded-lg p-0.5 gap-0.5">
+            <button
+              onClick={() => setSortMode('best')}
+              className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                sortMode === 'best'
+                  ? 'bg-accent text-white'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              Tốt nhất
+            </button>
+            <button
+              onClick={() => setSortMode('worst')}
+              className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                sortMode === 'worst'
+                  ? 'bg-accent text-white'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              Tệ nhất
+            </button>
+            <button
+              onClick={() => setSortMode('weight')}
+              className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors ${
+                sortMode === 'weight'
+                  ? 'bg-accent text-white'
+                  : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              Nặng nhất
+            </button>
+          </div>
         </div>
       </div>
 
-      {matched.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-text-muted text-xs uppercase tracking-wider font-medium mb-3">
-            Strength Standards
-          </h3>
-          <div className="space-y-4">
-            {matched.map((ex) => {
-              const info = getStrengthLevel(ex.best1RM, bodyweight, ex.name)
-              if (!info) return null
-              const standards = ref[ex.name]
-              const maxThreshold = standards.elite * ratio
-              const progressPct = Math.min((ex.best1RM / maxThreshold) * 100, 100)
-
-              return (
-                <div key={ex.name}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-text-primary text-sm font-medium">{ex.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-display text-accent text-base">
-                        {Math.round(ex.best1RM)} kg
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${getLevelBadgeClass(info.level)}`}
-                      >
-                        {info.level}
-                      </span>
-                    </div>
-                  </div>
-                  {info.nextThreshold !== null && (
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-bg-base rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-accent rounded-full transition-all"
-                          style={{ width: `${progressPct}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-text-muted whitespace-nowrap">
-                        {info.kgToNext!.toFixed(1)} kg to {info.nextThreshold.toFixed(0)} ({nextLevelName(info.level)})
-                      </span>
-                    </div>
-                  )}
-                  {info.nextThreshold === null && (
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-bg-base rounded-full overflow-hidden">
-                        <div className="h-full bg-accent rounded-full" style={{ width: '100%' }} />
-                      </div>
-                      <span className="text-xs text-accent">Elite ✓</span>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {unmatched.length > 0 && (
-        <div>
-          <h3 className="text-text-muted text-xs uppercase tracking-wider font-medium mb-3">
-            PR / Bodyweight Ratio
-          </h3>
+      {display.length > 0 && (
+        <>
           <div className="space-y-1.5">
-            {unmatched.slice(0, 15).map((ex) => {
-              const ratioVal = ex.best1RM / bodyweight
+            {display.map((ex, i) => {
+              const rank = i + 1
+              const pct = Math.max((ex._progress / maxProgress) * 100, 2)
+              const thresholds = getThresholds(ex.name, bodyweight)
+              const goalThreshold = thresholds[goalLevel] ?? 0
+              const remaining = Math.max(goalThreshold - ex.best5RM, 0)
+              const achieved = ex.best5RM >= goalThreshold
+
               return (
-                <div key={ex.name} className="flex items-center justify-between py-1">
-                  <span className="text-text-primary text-sm">{ex.name}</span>
-                  <div className="flex items-center gap-3">
-                    <span className="text-text-muted text-xs">
-                      {Math.round(ex.best1RM)} kg
-                    </span>
-                    <span className="text-accent font-display text-sm w-16 text-right">
-                      {ratioVal.toFixed(2)}× BW
-                    </span>
+                <div key={ex.name} className="flex items-center gap-3">
+                  <span className="text-text-muted text-xs w-5 text-right font-mono">{rank}</span>
+                  <span className="text-text-primary text-sm flex-1 truncate">{ex.name}</span>
+                  <span className={`font-display text-sm w-12 text-right ${achieved ? 'text-success' : 'text-accent'}`}>
+                    {Math.round(ex._progress)}%
+                  </span>
+                  <div className="w-20 h-2 bg-bg-base rounded-full overflow-hidden hidden sm:block">
+                    <div
+                      className="h-full bg-accent rounded-full transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
+                  <span className="text-xs text-text-muted w-24 text-right hidden sm:block">
+                    {achieved ? '✓ Đạt' : `còn ${remaining.toFixed(1)} kg`}
+                  </span>
                 </div>
               )
             })}
           </div>
-          {unmatched.length > 15 && (
-            <p className="text-xs text-text-muted mt-2">
-              + {unmatched.length - 15} more exercises
-            </p>
+          {sorted.length > 15 && (
+            <button
+              onClick={() => setShowAll(!showAll)}
+              className="mt-3 text-xs text-accent hover:text-accent-light transition-colors"
+            >
+              {showAll ? 'Thu gọn' : `Hiện tất cả (${sorted.length} bài)`}
+            </button>
           )}
-        </div>
+        </>
       )}
     </div>
   )
-}
-
-function nextLevelName(level: StrengthLevelName): string {
-  const idx = LEVEL_ORDER.indexOf(level)
-  if (idx >= LEVEL_ORDER.length - 1) return ''
-  return LEVEL_ORDER[idx + 1]
 }

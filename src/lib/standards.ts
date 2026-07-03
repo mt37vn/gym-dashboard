@@ -26,8 +26,12 @@ export const STRENGTH_STANDARDS: Record<string, StrengthLevels> = {
 
 const LEVEL_ORDER: StrengthLevelName[] = ['beginner', 'novice', 'intermediate', 'advanced', 'elite']
 
+export function convert1RMto5RM(oneRM: number): number {
+  return oneRM * 6 / 7
+}
+
 export function getStrengthLevel(
-  est1RM: number,
+  est5RM: number,
   bodyweightKg: number,
   exercise: string,
 ): { level: StrengthLevelName; nextThreshold: number | null; kgToNext: number | null } | null {
@@ -37,12 +41,12 @@ export function getStrengthLevel(
   const ratio = bodyweightKg / REFERENCE_BODYWEIGHT_KG
   const adjusted: StrengthLevels = {} as StrengthLevels
   for (const key of LEVEL_ORDER) {
-    adjusted[key] = raw[key] * ratio
+    adjusted[key] = convert1RMto5RM(raw[key] * ratio)
   }
 
   let currentLevel: StrengthLevelName = 'beginner'
   for (const key of LEVEL_ORDER) {
-    if (est1RM >= adjusted[key]) {
+    if (est5RM >= adjusted[key]) {
       currentLevel = key
     }
   }
@@ -55,7 +59,7 @@ export function getStrengthLevel(
 
   const nextLevel = LEVEL_ORDER[nextIdx]
   const nextThreshold = adjusted[nextLevel]
-  return { level: currentLevel, nextThreshold, kgToNext: Math.round((nextThreshold - est1RM) * 10) / 10 }
+  return { level: currentLevel, nextThreshold, kgToNext: Math.round((nextThreshold - est5RM) * 10) / 10 }
 }
 
 export function getLevelColor(level: StrengthLevelName): string {

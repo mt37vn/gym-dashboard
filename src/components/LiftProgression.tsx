@@ -9,30 +9,13 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import type { LiftProgressionPoint } from '../lib/parseWorkouts'
+import { STRENGTH_STANDARDS } from '../lib/standards'
 
 interface Props {
   data: Record<string, LiftProgressionPoint[]> | null
 }
 
-function findBarbellLifts(data: Record<string, LiftProgressionPoint[]>): string[] {
-  const barbellKeywords = [
-    'bench press',
-    'squat',
-    'deadlift',
-    'overhead press',
-    'barbell row',
-    'incline bench',
-    'decline bench',
-    'front squat',
-    'barbell curl',
-  ]
-  const names = Object.keys(data).filter((name) => {
-    const lower = name.toLowerCase()
-    return barbellKeywords.some((kw) => lower.includes(kw))
-  })
-  const withSets = names.filter((n) => (data[n]?.length ?? 0) >= 2)
-  return withSets.length > 0 ? withSets : names.slice(0, 5)
-}
+const BIG_3 = ['Bench Press', 'Squat', 'Deadlift']
 
 export default function LiftProgression({ data }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
@@ -40,24 +23,30 @@ export default function LiftProgression({ data }: Props) {
   if (!data || Object.keys(data).length === 0) {
     return (
       <div className="bg-bg-card rounded-lg p-4 border border-border">
-        <h2 className="font-display text-xl text-text-primary mb-4">Estimated 1RM Progression</h2>
+        <h2 className="font-display text-xl text-text-primary mb-4">Tiến trình 5RM</h2>
         <div className="h-64 bg-bg-card-hover rounded animate-pulse flex items-center justify-center text-text-muted text-sm">
-          No data
+          Không có dữ liệu
         </div>
       </div>
     )
   }
 
-  const lifts = findBarbellLifts(data)
-  const active = selected && data[selected] ? selected : lifts[0] || Object.keys(data)[0]
+  const allStandards = Object.entries(data)
+    .filter(([, points]) => points.length >= 2)
+    .filter(([name]) => STRENGTH_STANDARDS[name])
+    .map(([name]) => name)
+
+  const big3 = BIG_3.filter((name) => allStandards.includes(name))
+  const others = allStandards.filter((name) => !BIG_3.includes(name))
+  const active = selected && data[selected] ? selected : big3[0] || others[0] || ''
   const points = data[active] || []
 
   return (
     <div className="bg-bg-card rounded-lg p-4 border border-border">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="font-display text-xl text-text-primary">Estimated 1RM Progression</h2>
+        <h2 className="font-display text-xl text-text-primary">Tiến trình 5RM</h2>
         <div className="flex flex-wrap gap-1">
-          {lifts.slice(0, 6).map((name) => (
+          {big3.map((name) => (
             <button
               key={name}
               onClick={() => setSelected(name)}
@@ -70,13 +59,13 @@ export default function LiftProgression({ data }: Props) {
               {name}
             </button>
           ))}
-          {Object.keys(data).length > 6 && (
+          {others.length > 0 && (
             <select
               value={active}
               onChange={(e) => setSelected(e.target.value)}
               className="bg-bg-base text-text-primary text-xs rounded-md px-2 py-1 border border-border"
             >
-              {Object.keys(data).map((name) => (
+              {others.map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
@@ -105,6 +94,7 @@ export default function LiftProgression({ data }: Props) {
             domain={['auto', 'auto']}
           />
           <Tooltip
+            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
             contentStyle={{
               background: '#27272a',
               border: '1px solid #3f3f46',
@@ -115,12 +105,12 @@ export default function LiftProgression({ data }: Props) {
             labelFormatter={((v: number) => new Date(v).toLocaleDateString()) as any}
             formatter={((value: number, name: string) => [
               `${Math.round(value)} kg`,
-              name === 'est1RM' ? 'Est. 1RM' : name,
+              name === 'est5RM' ? '5RM' : name,
             ]) as any}
           />
           <Line
             type="monotone"
-            dataKey="est1RM"
+            dataKey="est5RM"
             stroke="#d97706"
             strokeWidth={2}
             dot={{ r: 3, fill: '#d97706' }}
@@ -129,7 +119,7 @@ export default function LiftProgression({ data }: Props) {
         </LineChart>
       </ResponsiveContainer>
       <div className="mt-2 text-xs text-text-muted">
-        Using Epley formula: est. 1RM = weight × (1 + reps / 30), from sets with reps ≤ 12
+        Giá trị thực tế: ưu tiên PR 5 rep → 10 rep → 15 rep theo thứ tự
       </div>
     </div>
   )

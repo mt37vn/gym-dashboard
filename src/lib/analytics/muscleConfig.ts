@@ -1,0 +1,188 @@
+export interface MuscleRule {
+  pattern: RegExp
+  primary: string
+  secondary?: string
+  tertiary?: string
+}
+
+type RawEntry = {
+  primaryMuscles: string[]
+  secondaryMuscles: string[]
+  subMuscle: string | null
+}
+
+export const RAW_MAP: Record<string, RawEntry> = {
+  "Bench Press": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid","triceps brachii"], "subMuscle": "pectoralis major, sternocostal head (flat bench)" },
+  "Smith Machine Bench Press": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid","triceps brachii"], "subMuscle": "pectoralis major, sternocostal head (flat bench)" },
+  "Push-Up": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid","triceps brachii"], "subMuscle": "pectoralis major, sternocostal head (flat bench)" },
+  "Machine Chest Press": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid","triceps brachii"], "subMuscle": "pectoralis major, sternocostal head (flat bench)" },
+  "Leverage Machine Chest Press": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid","triceps brachii"], "subMuscle": "pectoralis major, sternocostal head (flat bench)" },
+  "Dumbbell Chest Press": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid","triceps brachii"], "subMuscle": "pectoralis major, sternocostal head (flat bench)" },
+  "Machine Chest Fly": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": [], "subMuscle": "pectoralis major, sternocostal head (flat bench)" },
+  "Dumbbell Chest Fly": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": [], "subMuscle": "pectoralis major, sternocostal head (flat bench)" },
+  "Bar Dip": { "primaryMuscles": ["pectoralis major","triceps brachii"], "secondaryMuscles": ["deltoid"], "subMuscle": "pectoralis major, sternocostal head (decline bench)" },
+  "Decline Bench Press": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["triceps brachii","deltoid"], "subMuscle": "pectoralis major, sternocostal head (decline bench)" },
+  "Dumbbell Decline Chest Press": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["triceps brachii","deltoid"], "subMuscle": "pectoralis major, sternocostal head (decline bench)" },
+  "Incline Bench Press": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid","triceps brachii"], "subMuscle": "pectoralis major, clavicular head" },
+  "Smith Machine Incline Bench Press": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid","triceps brachii"], "subMuscle": "pectoralis major, clavicular head" },
+  "Incline Dumbbell Press": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid","triceps brachii"], "subMuscle": "pectoralis major, clavicular head" },
+  "Dumbbell Incline Chest Fly": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid"], "subMuscle": "pectoralis major, clavicular head" },
+  "Standing Cable Chest Fly (Lower Position)": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid"], "subMuscle": "pectoralis major, clavicular head" },
+  "Standing Cable Chest Fly (Middle Position)": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid"], "subMuscle": "pectoralis major, sternocostal head (flat bench)" },
+  "Standing Cable Chest Fly (Upper Position)": { "primaryMuscles": ["pectoralis major"], "secondaryMuscles": ["deltoid"], "subMuscle": "pectoralis major, sternocostal head (decline bench)" },
+  "Arnold Press": { "primaryMuscles": ["deltoid"], "secondaryMuscles": ["triceps brachii"], "subMuscle": "deltoid, anterior head" },
+  "Dumbbell Shoulder Press": { "primaryMuscles": ["deltoid"], "secondaryMuscles": ["triceps brachii"], "subMuscle": "deltoid, anterior head" },
+  "Machine Shoulder Press": { "primaryMuscles": ["deltoid"], "secondaryMuscles": ["triceps brachii"], "subMuscle": "deltoid, anterior head" },
+  "Overhead Press": { "primaryMuscles": ["deltoid"], "secondaryMuscles": ["triceps brachii"], "subMuscle": "deltoid, anterior head" },
+  "Seated Barbell Overhead Press": { "primaryMuscles": ["deltoid"], "secondaryMuscles": ["triceps brachii"], "subMuscle": "deltoid, anterior head" },
+  "Seated Dumbbell Shoulder Press": { "primaryMuscles": ["deltoid"], "secondaryMuscles": ["triceps brachii"], "subMuscle": "deltoid, anterior head" },
+  "Seated Smith Machine Shoulder Press": { "primaryMuscles": ["deltoid"], "secondaryMuscles": ["triceps brachii"], "subMuscle": "deltoid, anterior head" },
+  "Cable Lateral Raise": { "primaryMuscles": ["deltoid"], "secondaryMuscles": [], "subMuscle": "deltoid, lateral head" },
+  "Dumbbell Lateral Raise": { "primaryMuscles": ["deltoid"], "secondaryMuscles": [], "subMuscle": "deltoid, lateral head" },
+  "Face Pull": { "primaryMuscles": ["deltoid"], "secondaryMuscles": ["rhomboids","trapezius"], "subMuscle": "deltoid, posterior head" },
+  "Reverse Dumbbell Flyes on Incline Bench": { "primaryMuscles": ["deltoid"], "secondaryMuscles": ["rhomboids"], "subMuscle": "deltoid, posterior head" },
+  "Reverse Machine Fly": { "primaryMuscles": ["deltoid"], "secondaryMuscles": ["rhomboids"], "subMuscle": "deltoid, posterior head" },
+  "Y Rise": { "primaryMuscles": ["deltoid"], "secondaryMuscles": ["trapezius"], "subMuscle": "deltoid, posterior head + trapezius, lower fibers" },
+  "Assisted Pull-Up": { "primaryMuscles": ["latissimus dorsi"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi" },
+  "Pull-Up": { "primaryMuscles": ["latissimus dorsi"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi" },
+  "Lat Pulldown": { "primaryMuscles": ["latissimus dorsi"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi" },
+  "Lat Pulldown with Neutral Grip": { "primaryMuscles": ["latissimus dorsi"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi" },
+  "Machine Lat Pulldown": { "primaryMuscles": ["latissimus dorsi"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi" },
+  "Leverage Machine Lat Pulldown": { "primaryMuscles": ["latissimus dorsi"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi" },
+  "Neutral Close-Grip Lat Pulldown": { "primaryMuscles": ["latissimus dorsi"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi" },
+  "One-Arm Lat Pulldown": { "primaryMuscles": ["latissimus dorsi"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi" },
+  "Chin-Up": { "primaryMuscles": ["latissimus dorsi"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi + biceps brachii (synergist)" },
+  "Barbell Row": { "primaryMuscles": ["latissimus dorsi","rhomboids"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi + rhomboid major/minor" },
+  "Dumbbell Row": { "primaryMuscles": ["latissimus dorsi","rhomboids"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi + rhomboid major/minor" },
+  "Pendlay Row": { "primaryMuscles": ["latissimus dorsi","rhomboids"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "latissimus dorsi + rhomboid major/minor" },
+  "Cable Close-Grip Seated Row": { "primaryMuscles": ["rhomboids"], "secondaryMuscles": ["latissimus dorsi","biceps brachii"], "subMuscle": "rhomboid major/minor + trapezius, middle fibers" },
+  "Seated Machine Row": { "primaryMuscles": ["rhomboids"], "secondaryMuscles": ["latissimus dorsi","biceps brachii"], "subMuscle": "rhomboid major/minor + trapezius, middle fibers" },
+  "Leverage Seated Machine Row": { "primaryMuscles": ["rhomboids"], "secondaryMuscles": ["latissimus dorsi","biceps brachii"], "subMuscle": "rhomboid major/minor + trapezius, middle fibers" },
+  "Leverage Seated Machine Row (2 Arms)": { "primaryMuscles": ["rhomboids"], "secondaryMuscles": ["latissimus dorsi","biceps brachii"], "subMuscle": "rhomboid major/minor + trapezius, middle fibers" },
+  "Cable Wide Grip Seated Row": { "primaryMuscles": ["rhomboids","latissimus dorsi"], "secondaryMuscles": ["biceps brachii"], "subMuscle": "rhomboid major/minor + deltoid, posterior head" },
+  "Straight Arm Lat Pulldown": { "primaryMuscles": ["latissimus dorsi"], "secondaryMuscles": ["triceps brachii"], "subMuscle": "latissimus dorsi (isolation, straight-arm)" },
+  "Barbell Curl": { "primaryMuscles": ["biceps brachii"], "secondaryMuscles": ["brachioradialis"], "subMuscle": null },
+  "Barbell Preacher Curl": { "primaryMuscles": ["biceps brachii"], "secondaryMuscles": ["brachioradialis"], "subMuscle": null },
+  "Cable Curl With Bar": { "primaryMuscles": ["biceps brachii"], "secondaryMuscles": ["brachioradialis"], "subMuscle": null },
+  "Cable Curl With Rope": { "primaryMuscles": ["biceps brachii"], "secondaryMuscles": ["brachioradialis"], "subMuscle": null },
+  "Dumbbell Curl": { "primaryMuscles": ["biceps brachii"], "secondaryMuscles": ["brachioradialis"], "subMuscle": null },
+  "Incline Dumbbell Curl": { "primaryMuscles": ["biceps brachii"], "secondaryMuscles": ["brachioradialis"], "subMuscle": null },
+  "Machine Biceps Curl": { "primaryMuscles": ["biceps brachii"], "secondaryMuscles": ["brachioradialis"], "subMuscle": null },
+  "Bench Dip": { "primaryMuscles": ["triceps brachii"], "secondaryMuscles": ["pectoralis major","deltoid"], "subMuscle": null },
+  "Close-Grip Bench Press": { "primaryMuscles": ["triceps brachii"], "secondaryMuscles": ["pectoralis major","deltoid"], "subMuscle": null },
+  "Smith Machine Close-Grip Bench Press": { "primaryMuscles": ["triceps brachii"], "secondaryMuscles": ["pectoralis major","deltoid"], "subMuscle": null },
+  "Machine Triceps Press": { "primaryMuscles": ["triceps brachii"], "secondaryMuscles": [], "subMuscle": null },
+  "Overhead Cable Triceps Extension": { "primaryMuscles": ["triceps brachii"], "secondaryMuscles": [], "subMuscle": null },
+  "Triceps Pushdown With Bar": { "primaryMuscles": ["triceps brachii"], "secondaryMuscles": [], "subMuscle": null },
+  "Triceps Pushdown With Rope": { "primaryMuscles": ["triceps brachii"], "secondaryMuscles": [], "subMuscle": null },
+  "Bar Hang": { "primaryMuscles": ["forearm flexors"], "secondaryMuscles": ["latissimus dorsi"], "subMuscle": null },
+  "Reverse Preacher Curl": { "primaryMuscles": ["brachioradialis"], "secondaryMuscles": ["biceps brachii"], "subMuscle": null },
+  "Barbell Lunge": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Bulgarian Split Squat": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Bulgarian Split Squat (Bodyweight)": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Front Squat": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Leg Press": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Seated Leg Press": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "One-Legged Leg Press": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "One-Legged Seated Leg Press": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Single Leg Leg Press": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Smith Machine Lunge": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Smith Machine Squat": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Squat": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Overhead Squat": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Leg Extension": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": [], "subMuscle": null },
+  "Deadlift": { "primaryMuscles": ["hamstrings","gluteus maximus"], "secondaryMuscles": ["erector spinae","trapezius","brachioradialis","quadriceps femoris"], "subMuscle": null },
+  "Romanian Deadlift": { "primaryMuscles": ["hamstrings"], "secondaryMuscles": ["gluteus maximus","erector spinae"], "subMuscle": null },
+  "Smith Machine Romanian Deadlift": { "primaryMuscles": ["hamstrings"], "secondaryMuscles": ["gluteus maximus","erector spinae"], "subMuscle": null },
+  "Stiff-Legged Deadlift": { "primaryMuscles": ["hamstrings"], "secondaryMuscles": ["gluteus maximus","erector spinae"], "subMuscle": null },
+  "Seated Leg Curl": { "primaryMuscles": ["hamstrings"], "secondaryMuscles": [], "subMuscle": null },
+  "Trap Bar Deadlift With Low Handles": { "primaryMuscles": ["hamstrings","quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","trapezius","brachioradialis"], "subMuscle": null },
+  "Calf Raise in Leg Press": { "primaryMuscles": ["gastrocnemius"], "secondaryMuscles": ["soleus"], "subMuscle": null },
+  "Seated Calf Raise": { "primaryMuscles": ["gastrocnemius"], "secondaryMuscles": ["soleus"], "subMuscle": null },
+  "Smith Machine Calf Raise": { "primaryMuscles": ["gastrocnemius"], "secondaryMuscles": ["soleus"], "subMuscle": null },
+  "Standing Calf Raise": { "primaryMuscles": ["gastrocnemius"], "secondaryMuscles": ["soleus"], "subMuscle": null },
+  "Hip Abduction Machine": { "primaryMuscles": ["gluteus medius"], "secondaryMuscles": ["gluteus maximus"], "subMuscle": null },
+  "Hip Adduction Machine": { "primaryMuscles": ["adductor magnus"], "secondaryMuscles": [], "subMuscle": null },
+  "Ab bench": { "primaryMuscles": ["rectus abdominis"], "secondaryMuscles": [], "subMuscle": null },
+  "Crunch": { "primaryMuscles": ["rectus abdominis"], "secondaryMuscles": [], "subMuscle": null },
+  "Hanging Knee Raise": { "primaryMuscles": ["rectus abdominis"], "secondaryMuscles": [], "subMuscle": null },
+  "Hanging Leg Raise": { "primaryMuscles": ["rectus abdominis"], "secondaryMuscles": [], "subMuscle": null },
+  "Lying Leg Raise": { "primaryMuscles": ["rectus abdominis"], "secondaryMuscles": [], "subMuscle": null },
+  "Machine Crunch": { "primaryMuscles": ["rectus abdominis"], "secondaryMuscles": [], "subMuscle": null },
+  "Cable High to Low Wood Chop": { "primaryMuscles": ["external oblique"], "secondaryMuscles": ["deltoid"], "subMuscle": null },
+  "Cable Horizontal Wood Chop": { "primaryMuscles": ["external oblique"], "secondaryMuscles": ["deltoid"], "subMuscle": null },
+  "Cable Low to High Wood Chop": { "primaryMuscles": ["external oblique"], "secondaryMuscles": ["deltoid"], "subMuscle": null },
+  "Pallof Press": { "primaryMuscles": ["external oblique"], "secondaryMuscles": ["deltoid"], "subMuscle": null },
+  "Oblique Crunch": { "primaryMuscles": ["external oblique"], "secondaryMuscles": [], "subMuscle": null },
+  "Dumbbell Side Bend": { "primaryMuscles": ["external oblique"], "secondaryMuscles": [], "subMuscle": null },
+  "Hanging Windshield Wiper": { "primaryMuscles": ["external oblique"], "secondaryMuscles": [], "subMuscle": null },
+  "Back Extension on Roman chair": { "primaryMuscles": ["erector spinae"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Machine Back Extension": { "primaryMuscles": ["erector spinae"], "secondaryMuscles": ["gluteus maximus","hamstrings"], "subMuscle": null },
+  "Running": { "primaryMuscles": ["quadriceps femoris","hamstrings"], "secondaryMuscles": ["gastrocnemius"], "subMuscle": null },
+  "Sled Push": { "primaryMuscles": ["quadriceps femoris"], "secondaryMuscles": ["gluteus maximus","gastrocnemius"], "subMuscle": null }
+}
+
+export const EXERCISE_MUSCLE_MAP: Record<string, string> = {}
+const LOWER_MAP: Record<string, string> = {}
+
+for (const [name, entry] of Object.entries(RAW_MAP)) {
+  const muscle = entry.primaryMuscles[0] || 'Other'
+  EXERCISE_MUSCLE_MAP[name] = muscle
+  LOWER_MAP[name.toLowerCase()] = muscle
+}
+
+export function lookupExerciseMuscle(exercise: string): string | null {
+  if (!exercise) return null
+  const exact = EXERCISE_MUSCLE_MAP[exercise]
+  if (exact) return exact
+  return LOWER_MAP[exercise.toLowerCase()] ?? null
+}
+
+export const MUSCLE_COLORS: Record<string, string> = {
+  'pectoralis major': '#ef4444',
+  deltoid: '#f97316',
+  'latissimus dorsi': '#22c55e',
+  rhomboids: '#16a34a',
+  trapezius: '#15803d',
+  'triceps brachii': '#a855f7',
+  'biceps brachii': '#0ea5e9',
+  brachioradialis: '#f97316',
+  'forearm flexors': '#d97706',
+  'quadriceps femoris': '#3b82f6',
+  hamstrings: '#14b8a6',
+  gastrocnemius: '#78716c',
+  soleus: '#6b7280',
+  'rectus abdominis': '#eab308',
+  'external oblique': '#f59e0b',
+  'erector spinae': '#84cc16',
+  'gluteus medius': '#ec4899',
+  'gluteus maximus': '#db2777',
+  'adductor magnus': '#be185d',
+  Other: '#71717a',
+}
+
+export const MUSCLE_RULES: MuscleRule[] = [
+  { pattern: /\b(calf|calves)\b/i, primary: "gastrocnemius" },
+  { pattern: /\b(hip thrust|glute|hip abduct|hip adduct)\b/i, primary: "gluteus maximus" },
+  { pattern: /\b(leg curl|nordic curl|reverse hyper)\b/i, primary: "hamstrings" },
+  { pattern: /\b(romanian deadlift|stiff[-\s]?legged)\b/i, primary: "hamstrings" },
+  { pattern: /\bgood morning\b/i, primary: "hamstrings", secondary: "erector spinae" },
+  { pattern: /\bdeadlift\b/i, primary: "hamstrings", secondary: "erector spinae", tertiary: "gastrocnemius" },
+  { pattern: /\b(ab\b|crunche?|plank|hanging leg|wood chop|pallof|side bend|kneeling ab wheel)\b/i, primary: "rectus abdominis" },
+  { pattern: /\b(tricep|pushdown|skull crusher|lying triceps)\b/i, primary: "triceps brachii" },
+  { pattern: /\bcurl\b(?!.*leg)/i, primary: "biceps brachii" },
+  { pattern: /\bback extension\b/i, primary: "erector spinae" },
+  { pattern: /\b(rear delt|face pull)\b/i, primary: "deltoid" },
+  { pattern: /\b(front raise|arnold press)\b/i, primary: "deltoid" },
+  { pattern: /\b(lateral raise|upright row)\b/i, primary: "deltoid" },
+  { pattern: /\b(overhead press|shoulder press)\b/i, primary: "deltoid", secondary: "triceps brachii" },
+  { pattern: /\b(chest fly|cable fly|pec\b)\b/i, primary: "pectoralis major" },
+  { pattern: /\b(bench|push[-\s]?up)\b/i, primary: "pectoralis major", secondary: "triceps brachii" },
+  { pattern: /\bdip\b/i, primary: "pectoralis major", secondary: "triceps brachii" },
+  { pattern: /\bpress\b/i, primary: "pectoralis major", secondary: "triceps brachii" },
+  { pattern: /\b(row\b|pulldown|pull[-\s]?up|chin[-\s]?up|pullover)\b/i, primary: "latissimus dorsi", secondary: "biceps brachii" },
+  { pattern: /\btrap bar\b/i, primary: "latissimus dorsi", secondary: "quadriceps femoris" },
+  { pattern: /\blat\b/i, primary: "latissimus dorsi" },
+  { pattern: /\b(squat|lunge|leg press|leg extension|bulgarian|goblet|hack squat)\b/i, primary: "quadriceps femoris", secondary: "gluteus maximus" },
+  { pattern: /\b(sled push|cycling|running)\b/i, primary: "quadriceps femoris", secondary: "gastrocnemius" },
+]

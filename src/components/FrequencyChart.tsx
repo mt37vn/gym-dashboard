@@ -9,14 +9,23 @@ import {
   Cell,
   ReferenceLine,
 } from 'recharts'
-import type { MonthlyFrequency } from '../lib/parseWorkouts'
+import type { MonthlyFrequency, DailyFrequency, Period } from '../lib/parseWorkouts'
 
 interface Props {
   data: MonthlyFrequency[] | null
+  dailyData: DailyFrequency[] | null
+  period: Period
 }
 
-export default function FrequencyChart({ data }: Props) {
-  if (!data || data.length === 0) {
+function useDaily(period: Period): boolean {
+  return period === '4w' || period === '8w' || period === '12w'
+}
+
+export default function FrequencyChart({ data, dailyData, period }: Props) {
+  const isDaily = useDaily(period)
+  const source = isDaily ? dailyData : data
+
+  if (!source || source.length === 0) {
     return (
       <div className="bg-bg-card rounded-lg p-4 border border-border">
         <h2 className="font-display text-xl text-text-primary mb-4">Training Frequency</h2>
@@ -27,7 +36,13 @@ export default function FrequencyChart({ data }: Props) {
     )
   }
 
-  const counts = data.map((d) => d.count)
+  // Normalize to { label, count } shape
+  const chartData = (source as any[]).map((d: any) => ({
+    label: isDaily ? d.date.slice(5) : d.month, // MM-DD for daily, YYYY-MM for monthly
+    count: d.count,
+  }))
+
+  const counts = chartData.map((d: any) => d.count)
   const maxCount = Math.max(...counts)
   const minCount = Math.min(...counts)
 
@@ -35,13 +50,14 @@ export default function FrequencyChart({ data }: Props) {
     <div className="bg-bg-card rounded-lg p-4 border border-border">
       <h2 className="font-display text-xl text-text-primary mb-4">Training Frequency</h2>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+        <BarChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
           <XAxis
-            dataKey="month"
-            tick={{ fill: '#a1a1aa', fontSize: 11 }}
+            dataKey="label"
+            tick={{ fill: '#a1a1aa', fontSize: 10 }}
             tickLine={false}
             axisLine={{ stroke: '#3f3f46' }}
+            interval={isDaily ? Math.max(Math.floor(chartData.length / 15), 0) : 0}
           />
           <YAxis
             tick={{ fill: '#a1a1aa', fontSize: 11 }}
@@ -57,11 +73,11 @@ export default function FrequencyChart({ data }: Props) {
               color: '#f4f4f5',
               fontSize: 13,
             }}
-            cursor={{ fill: 'rgba(217,119,6,0.1)' }}
+            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
           />
           <ReferenceLine y={Math.round(counts.reduce((a, b) => a + b, 0) / counts.length)} stroke="#71717a" strokeDasharray="4 4" />
-          <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={32}>
-            {data.map((entry, index) => (
+          <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={isDaily ? 8 : 32}>
+            {chartData.map((entry: any, index: number) => (
               <Cell
                 key={index}
                 fill={entry.count === maxCount ? '#d97706' : entry.count === minCount ? '#ef4444' : '#d97706'}

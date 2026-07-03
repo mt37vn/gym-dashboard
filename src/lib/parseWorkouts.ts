@@ -44,7 +44,7 @@ export interface ExerciseStats {
   name: string
   setCount: number
   totalVolume: number
-  best1RM: number
+  best5RM: number
 }
 
 export interface WeeklyVolume {
@@ -59,10 +59,22 @@ export interface MonthlyFrequency {
 
 export interface LiftProgressionPoint {
   date: number
-  est1RM: number
+  est5RM: number
   weight: number
   reps: number
 }
+
+export interface DailyFrequency {
+  date: string
+  count: number
+}
+
+export interface DailyVolume {
+  date: string
+  totalVolume: number
+}
+
+export type Period = '4w' | '8w' | '12w' | 'this-year' | 'last-year' | 'all'
 
 export interface ParsedData {
   sessions: WorkoutSession[]
@@ -75,11 +87,154 @@ export interface ParsedData {
   exerciseStats: ExerciseStats[]
   weeklyVolume: WeeklyVolume[]
   monthlyFrequency: MonthlyFrequency[]
+  dailyFrequency: DailyFrequency[]
+  dailyVolume: DailyVolume[]
   liftProgression: Record<string, LiftProgressionPoint[]>
 }
 
 function parseBool(val: string): boolean {
   return val === 'true'
+}
+
+const REP_PRIORITY: Record<number, number> = { 5: 3, 10: 2, 15: 1 }
+
+function repScore(reps: number): number {
+  return REP_PRIORITY[reps] ?? 0
+}
+
+function compareStrength(a: LiftProgressionPoint, b: LiftProgressionPoint): number {
+  const pa = repScore(a.reps)
+  const pb = repScore(b.reps)
+  if (pa !== pb) return pb - pa
+  return b.est5RM - a.est5RM
+}
+
+function computeStats(sessions: WorkoutSession[], allSets: ParsedSet[]) {
+  const totalSets = allSets.length
+  const totalVolume = allSets.reduce((sum, s) => sum + s.volume, 0)
+  const totalWorkouts = sessions.length
+
+  const durations = sessions.map((s) => (s.endTime - s.startTime) / 60000)
+  const avgSessionMinutes = durations.length > 0
+    ? Math.round((durations.reduce((a, b) => a + b, 0) / durations.length) * 10) / 10
+    : 0
+
+  const timestamps = sessions.map((s) => s.startTime)
+  const dateRange = {
+    start: new Date(Math.min(...timestamps)),
+    end: new Date(Math.max(...timestamps)),
+  }
+
+  const bestPerExercise = new Map<string, { setCount: number; totalVolume: number; bestWeight: number; bestPriority: number }>()
+  const liftMap = new Map<string, LiftProgressionPoint[]>()
+
+  for (const s of allSets) {
+    if (!s.exercise) continue
+    const vol = s.volume
+    const prio = s.reps !== null ? REP_PRIORITY[s.reps] ?? 0 : 0
+    const realWeight = prio > 0 && s.weight !== null && s.weight > 0 ? s.weight : 0
+
+    const existing = bestPerExercise.get(s.exercise)
+    if (existing) {
+      existing.setCount++
+      existing.totalVolume += vol
+      if (realWeight > 0) {
+        if (prio > existing.bestPriority || (prio === existing.bestPriority && realWeight > existing.bestWeight)) {
+          existing.bestWeight = realWeight
+          existing.bestPriority = prio
+        }
+      }
+    } else {
+      bestPerExercise.set(s.exercise, { setCount: 1, totalVolume: vol, bestWeight: realWeight, bestPriority: prio })
+    }
+
+    if (realWeight > 0) {
+      const key = s.exercise
+      if (!liftMap.has(key)) liftMap.set(key, [])
+      liftMap.get(key)!.push({ date: s.startTime, est5RM: realWeight, weight: s.weight!, reps: s.reps! })
+    }
+  }
+
+  const exerciseStats: ExerciseStats[] = []
+  for (const [name, { setCount, totalVolume, bestWeight }] of bestPerExercise) {
+    exerciseStats.push({ name, setCount, totalVolume, best5RM: bestWeight })
+  }
+  exerciseStats.sort((a, b) => b.setCount - a.setCount)
+
+  const liftProgression: Record<string, LiftProgressionPoint[]> = {}
+  for (const [name, points] of liftMap) {
+    const bySession = new Map<number, LiftProgressionPoint>()
+    for (const p of points) {
+      const existing = bySession.get(p.date)
+      if (!existing || compareStrength(p, existing) < 0) bySession.set(p.date, p)
+    }
+    liftProgression[name] = Array.from(bySession.values()).sort((a, b) => a.date - b.date)
+  }
+
+  const weeklyMap = new Map<string, number>()
+  for (const s of allSets) {
+    const d = new Date(s.startTime)
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+    const monday = new Date(d.setDate(diff))
+    weeklyMap.set(monday.toISOString().slice(0, 10), (weeklyMap.get(monday.toISOString().slice(0, 10)) || 0) + s.volume)
+  }
+  const weeklyVolume: WeeklyVolume[] = Array.from(weeklyMap.entries())
+    .map(([weekStart, totalVolume]) => ({ weekStart, totalVolume }))
+    .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
+
+  const monthlyMap = new Map<string, Set<number>>()
+  for (const s of sessions) {
+    const d = new Date(s.startTime)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    if (!monthlyMap.has(key)) monthlyMap.set(key, new Set())
+    monthlyMap.get(key)!.add(s.startTime)
+  }
+  const monthlyFrequency: MonthlyFrequency[] = Array.from(monthlyMap.entries())
+    .map(([month, starts]) => ({ month, count: starts.size }))
+    .sort((a, b) => a.month.localeCompare(b.month))
+
+  const dailyFreqMap = new Map<string, number>()
+  for (const s of sessions) {
+    const key = new Date(s.startTime).toISOString().slice(0, 10)
+    dailyFreqMap.set(key, (dailyFreqMap.get(key) || 0) + 1)
+  }
+  const dailyFrequency: DailyFrequency[] = Array.from(dailyFreqMap.entries())
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  const dailyVolMap = new Map<string, number>()
+  for (const s of allSets) {
+    const key = new Date(s.startTime).toISOString().slice(0, 10)
+    dailyVolMap.set(key, (dailyVolMap.get(key) || 0) + s.volume)
+  }
+  const dailyVolume: DailyVolume[] = Array.from(dailyVolMap.entries())
+    .map(([date, totalVolume]) => ({ date, totalVolume }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  return { totalWorkouts, totalSets, totalVolume: Math.round(totalVolume * 10) / 10, avgSessionMinutes, dateRange, exerciseStats, weeklyVolume, monthlyFrequency, dailyFrequency, dailyVolume, liftProgression }
+}
+
+export function getPeriodCutoff(period: Period): number {
+  switch (period) {
+    case '4w': return Date.now() - 4 * 7 * 86400000
+    case '8w': return Date.now() - 8 * 7 * 86400000
+    case '12w': return Date.now() - 12 * 7 * 86400000
+    case 'this-year': return new Date(new Date().getFullYear(), 0, 1).getTime()
+    case 'last-year': return Date.now() - 365 * 86400000
+    default: return 0
+  }
+}
+
+export function getPeriodWeeks(period: Period, totalDataWeeks: number): number {
+  switch (period) {
+    case '4w': return 4
+    case '8w': return 8
+    case '12w': return 12
+    case 'this-year': return Math.ceil((Date.now() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (7 * 86400000))
+    case 'last-year': return 52
+    default: return totalDataWeeks
+  }
 }
 
 export function parseCsv(raw: string): ParsedData {
@@ -158,110 +313,31 @@ export function parseCsv(raw: string): ParsedData {
 
   sessions.sort((a, b) => a.startTime - b.startTime)
 
-  const totalSets = parsedSets.length
-  const totalVolume = parsedSets.reduce((sum, s) => sum + s.volume, 0)
-  const totalWorkouts = sessions.length
-
-  const durations = sessions.map((s) => (s.endTime - s.startTime) / 60000)
-  const avgSessionMinutes =
-    durations.length > 0
-      ? Math.round((durations.reduce((a, b) => a + b, 0) / durations.length) * 10) / 10
-      : 0
-
-  const timestamps = sessions.map((s) => s.startTime)
-  const dateRange = {
-    start: new Date(Math.min(...timestamps)),
-    end: new Date(Math.max(...timestamps)),
-  }
-
-  const exerciseMap = new Map<string, { setCount: number; totalVolume: number; best1RM: number }>()
-  const liftProgressionMap = new Map<string, LiftProgressionPoint[]>()
-
-  for (const s of parsedSets) {
-    if (!s.exercise) continue
-
-    const existing = exerciseMap.get(s.exercise)
-    const vol = s.volume
-    let est1RM = 0
-    if (s.weight !== null && s.reps !== null && s.reps <= 12 && s.reps > 0 && s.weight > 0) {
-      est1RM = s.weight * (1 + s.reps / 30)
-    }
-
-    if (existing) {
-      existing.setCount++
-      existing.totalVolume += vol
-      if (est1RM > existing.best1RM) existing.best1RM = est1RM
-    } else {
-      exerciseMap.set(s.exercise, { setCount: 1, totalVolume: vol, best1RM: est1RM })
-    }
-
-    if (est1RM > 0 && s.weight !== null && s.reps !== null) {
-      const key = s.exercise
-      if (!liftProgressionMap.has(key)) liftProgressionMap.set(key, [])
-      liftProgressionMap.get(key)!.push({
-        date: s.startTime,
-        est1RM,
-        weight: s.weight,
-        reps: s.reps,
-      })
-    }
-  }
-
-  const exerciseStats: ExerciseStats[] = []
-  for (const [name, stats] of exerciseMap) {
-    exerciseStats.push({ name, ...stats })
-  }
-  exerciseStats.sort((a, b) => b.setCount - a.setCount)
-
-  const liftProgression: Record<string, LiftProgressionPoint[]> = {}
-  for (const [name, points] of liftProgressionMap) {
-    const bySession = new Map<number, LiftProgressionPoint>()
-    for (const p of points) {
-      const existing = bySession.get(p.date)
-      if (!existing || p.est1RM > existing.est1RM) {
-        bySession.set(p.date, p)
-      }
-    }
-    const sorted = Array.from(bySession.values()).sort((a, b) => a.date - b.date)
-    liftProgression[name] = sorted
-  }
-
-  const weeklyMap = new Map<string, number>()
-  for (const s of parsedSets) {
-    const d = new Date(s.startTime)
-    const day = d.getDay()
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-    const monday = new Date(d.setDate(diff))
-    const key = monday.toISOString().slice(0, 10)
-    weeklyMap.set(key, (weeklyMap.get(key) || 0) + s.volume)
-  }
-  const weeklyVolume: WeeklyVolume[] = Array.from(weeklyMap.entries())
-    .map(([weekStart, totalVolume]) => ({ weekStart, totalVolume }))
-    .sort((a, b) => a.weekStart.localeCompare(b.weekStart))
-
-  const monthlyMap = new Map<string, Set<number>>()
-  for (const s of sessions) {
-    const d = new Date(s.startTime)
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    if (!monthlyMap.has(key)) monthlyMap.set(key, new Set())
-    monthlyMap.get(key)!.add(s.startTime)
-  }
-  const monthlyFrequency: MonthlyFrequency[] = Array.from(monthlyMap.entries())
-    .map(([month, starts]) => ({ month, count: starts.size }))
-    .sort((a, b) => a.month.localeCompare(b.month))
+  const stats = computeStats(sessions, parsedSets)
 
   return {
     sessions,
-    totalWorkouts,
-    totalSets,
-    totalVolume: Math.round(totalVolume * 10) / 10,
-    avgSessionMinutes,
-    dateRange,
+    ...stats,
     anomalies,
-    exerciseStats,
-    weeklyVolume,
-    monthlyFrequency,
-    liftProgression,
+  }
+}
+
+export function filterParsedData(data: ParsedData, period: Period): ParsedData {
+  if (period === 'all') return data
+
+  const cutoff = getPeriodCutoff(period)
+
+  const filteredSessions = data.sessions
+    .map(s => ({ ...s, sets: s.sets.filter(set => set.startTime >= cutoff) }))
+    .filter(s => s.sets.length > 0)
+
+  const filteredSets = filteredSessions.flatMap(s => s.sets)
+  const stats = computeStats(filteredSessions, filteredSets)
+
+  return {
+    sessions: filteredSessions,
+    ...stats,
+    anomalies: data.anomalies,
   }
 }
 

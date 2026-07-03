@@ -7,17 +7,25 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import type { WeeklyVolume, Anomalies } from '../lib/parseWorkouts'
+import type { WeeklyVolume, DailyVolume, Anomalies, Period } from '../lib/parseWorkouts'
 
 interface Props {
   data: WeeklyVolume[] | null
+  dailyData: DailyVolume[] | null
   anomalies: Anomalies | null
+  period: Period
 }
 
-export default function VolumeChart({ data, anomalies }: Props) {
+function useDaily(period: Period): boolean {
+  return period === '4w' || period === '8w' || period === '12w'
+}
+
+export default function VolumeChart({ data, dailyData, anomalies, period }: Props) {
+  const isDaily = useDaily(period)
+  const source = isDaily ? dailyData : data
   const hasFiltered = anomalies && anomalies.highReps.length > 0
 
-  if (!data || data.length === 0) {
+  if (!source || source.length === 0) {
     return (
       <div className="bg-bg-card rounded-lg p-4 border border-border">
         <h2 className="font-display text-xl text-text-primary mb-4">Volume Trend</h2>
@@ -27,6 +35,11 @@ export default function VolumeChart({ data, anomalies }: Props) {
       </div>
     )
   }
+
+  const chartData = (source as any[]).map((d: any) => ({
+    label: isDaily ? d.date.slice(5) : d.weekStart,
+    totalVolume: d.totalVolume,
+  }))
 
   return (
     <div className="bg-bg-card rounded-lg p-4 border border-border">
@@ -39,17 +52,18 @@ export default function VolumeChart({ data, anomalies }: Props) {
         )}
       </div>
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+        <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
           <XAxis
-            dataKey="weekStart"
-            tick={{ fill: '#a1a1aa', fontSize: 11 }}
+            dataKey="label"
+            tick={{ fill: '#a1a1aa', fontSize: 10 }}
             tickLine={false}
             axisLine={{ stroke: '#3f3f46' }}
-            tickFormatter={(v: string) => {
+            interval={isDaily ? Math.max(Math.floor(chartData.length / 15), 0) : 0}
+            tickFormatter={isDaily ? undefined : ((v: string) => {
               const d = new Date(v)
               return `${d.getMonth() + 1}/${d.getDate()}`
-            }}
+            })}
           />
           <YAxis
             tick={{ fill: '#a1a1aa', fontSize: 11 }}
@@ -58,6 +72,7 @@ export default function VolumeChart({ data, anomalies }: Props) {
             tickFormatter={(v: number) => `${Math.round(v / 1000)}k`}
           />
           <Tooltip
+            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
             contentStyle={{
               background: '#27272a',
               border: '1px solid #3f3f46',
@@ -65,7 +80,7 @@ export default function VolumeChart({ data, anomalies }: Props) {
               color: '#f4f4f5',
               fontSize: 13,
             }}
-            labelFormatter={((v: string) => `Week of ${v}`) as any}
+            labelFormatter={isDaily ? undefined : ((v: string) => `Week of ${v}`) as any}
             formatter={((value: number) => [`${Math.round(value).toLocaleString()} kg`, 'Volume']) as any}
           />
           <Line
