@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import { parseCsv, filterParsedData } from './lib/parseWorkouts'
 import type { ParsedData, Period } from './lib/parseWorkouts'
+import { exportToMarkdown } from './lib/exportToAi'
 import FileUpload from './components/FileUpload'
 import StatsOverview from './components/StatsOverview'
 import FrequencyChart from './components/FrequencyChart'
@@ -23,6 +24,7 @@ const PERIODS: { key: Period; label: string }[] = [
 function App() {
   const [data, setData] = useState<ParsedData | null>(null)
   const [period, setPeriod] = useState<Period>('4w')
+  const [copied, setCopied] = useState(false)
 
   const filteredData = useMemo(() =>
     data ? filterParsedData(data, period) : null,
@@ -38,6 +40,25 @@ function App() {
     }
   }, [])
 
+  const handleExport = useCallback(() => {
+    if (!filteredData) return
+    const md = exportToMarkdown(filteredData, period)
+    navigator.clipboard.writeText(md).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }).catch(() => {
+      // fallback for older browsers
+      const ta = document.createElement('textarea')
+      ta.value = md
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }, [filteredData, period])
+
   return (
     <div className="min-h-screen bg-bg-base">
       <header className="border-b border-border">
@@ -46,9 +67,16 @@ function App() {
             GYM DASHBOARD
           </h1>
           {filteredData && (
-            <span className="text-xs text-text-muted">
-              {filteredData.totalWorkouts} workouts · {filteredData.totalSets} sets
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-text-muted">
+                {filteredData.totalWorkouts} workouts · {filteredData.totalSets} sets
+              </span>
+              <button onClick={handleExport}
+                className="px-2.5 py-1 text-xs rounded-md font-medium bg-accent/20 text-accent hover:bg-accent/30 transition-colors"
+              >
+                {copied ? 'Đã copy!' : 'Export to AI'}
+              </button>
+            </div>
           )}
         </div>
       </header>
