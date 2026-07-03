@@ -72,7 +72,7 @@ export default function VolumeChart({ data, dailyData, anomalies, period }: Prop
             tickFormatter={(v: number) => `${Math.round(v / 1000)}k`}
           />
           <Tooltip
-            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+            cursor={false}
             contentStyle={{
               background: '#27272a',
               border: '1px solid #3f3f46',

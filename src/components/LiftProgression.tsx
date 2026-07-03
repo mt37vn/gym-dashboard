@@ -94,7 +94,7 @@ export default function LiftProgression({ data }: Props) {
             domain={['auto', 'auto']}
           />
           <Tooltip
-            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+            cursor={false}
             contentStyle={{
               background: '#27272a',
               border: '1px solid #3f3f46',

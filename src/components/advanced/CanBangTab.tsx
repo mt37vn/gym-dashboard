@@ -144,7 +144,7 @@ export default function CanBangTab({ sessions, dateRange, period }: Props) {
                 axisLine={false}
               />
               <Tooltip
-                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                cursor={false}
                 contentStyle={{ background: '#27272a', border: '1px solid #3f3f46', borderRadius: 8, color: '#f4f4f5', fontSize: 12 }}
                 formatter={((_value: number, _name: string, props: { payload: { avg: number; totalSets: number } }) => [
                   `${props.payload.avg} set/tuần (${props.payload.totalSets} set)`,

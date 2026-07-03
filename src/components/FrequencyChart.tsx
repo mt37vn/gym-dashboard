@@ -36,9 +36,8 @@ export default function FrequencyChart({ data, dailyData, period }: Props) {
     )
   }
 
-  // Normalize to { label, count } shape
   const chartData = (source as any[]).map((d: any) => ({
-    label: isDaily ? d.date.slice(5) : d.month, // MM-DD for daily, YYYY-MM for monthly
+    label: isDaily ? d.date.slice(5) : d.month,
     count: d.count,
   }))
 
@@ -66,6 +65,7 @@ export default function FrequencyChart({ data, dailyData, period }: Props) {
             allowDecimals={false}
           />
           <Tooltip
+            cursor={false}
             contentStyle={{
               background: '#27272a',
               border: '1px solid #3f3f46',
@@ -73,7 +73,6 @@ export default function FrequencyChart({ data, dailyData, period }: Props) {
               color: '#f4f4f5',
               fontSize: 13,
             }}
-            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
           />
           <ReferenceLine y={Math.round(counts.reduce((a, b) => a + b, 0) / counts.length)} stroke="#71717a" strokeDasharray="4 4" />
           <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={isDaily ? 8 : 32}>
