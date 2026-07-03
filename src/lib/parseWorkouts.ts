@@ -341,19 +341,3 @@ export function filterParsedData(data: ParsedData, period: Period): ParsedData {
   }
 }
 
-export function isBarbellExercise(name: string): boolean {
-  const barbellKeywords = [
-    'bench press',
-    'squat',
-    'deadlift',
-    'overhead press',
-    'barbell row',
-    'incline bench',
-    'decline bench',
-    'front squat',
-    'barbell curl',
-    'barbell',
-  ]
-  const lower = name.toLowerCase()
-  return barbellKeywords.some((kw) => lower.includes(kw))
-}

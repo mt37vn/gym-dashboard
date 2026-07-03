@@ -1,4 +1,4 @@
-export interface StrengthLevels {
+interface StrengthLevels {
   beginner: number
   novice: number
   intermediate: number
@@ -24,70 +24,7 @@ export const STRENGTH_STANDARDS: Record<string, StrengthLevels> = {
   'Dumbbell Curl': { beginner: 6.5, novice: 12, intermediate: 24, advanced: 31, elite: 39 },
 }
 
-const LEVEL_ORDER: StrengthLevelName[] = ['beginner', 'novice', 'intermediate', 'advanced', 'elite']
-
 export function convert1RMto5RM(oneRM: number): number {
   return oneRM * 6 / 7
 }
 
-export function getStrengthLevel(
-  est5RM: number,
-  bodyweightKg: number,
-  exercise: string,
-): { level: StrengthLevelName; nextThreshold: number | null; kgToNext: number | null } | null {
-  const raw = STRENGTH_STANDARDS[exercise]
-  if (!raw) return null
-
-  const ratio = bodyweightKg / REFERENCE_BODYWEIGHT_KG
-  const adjusted: StrengthLevels = {} as StrengthLevels
-  for (const key of LEVEL_ORDER) {
-    adjusted[key] = convert1RMto5RM(raw[key] * ratio)
-  }
-
-  let currentLevel: StrengthLevelName = 'beginner'
-  for (const key of LEVEL_ORDER) {
-    if (est5RM >= adjusted[key]) {
-      currentLevel = key
-    }
-  }
-
-  const currentIdx = LEVEL_ORDER.indexOf(currentLevel)
-  const nextIdx = currentIdx + 1
-  if (nextIdx >= LEVEL_ORDER.length) {
-    return { level: currentLevel, nextThreshold: null, kgToNext: null }
-  }
-
-  const nextLevel = LEVEL_ORDER[nextIdx]
-  const nextThreshold = adjusted[nextLevel]
-  return { level: currentLevel, nextThreshold, kgToNext: Math.round((nextThreshold - est5RM) * 10) / 10 }
-}
-
-export function getLevelColor(level: StrengthLevelName): string {
-  switch (level) {
-    case 'beginner':
-      return 'text-zinc-400'
-    case 'novice':
-      return 'text-emerald-400'
-    case 'intermediate':
-      return 'text-sky-400'
-    case 'advanced':
-      return 'text-violet-400'
-    case 'elite':
-      return 'text-amber-400'
-  }
-}
-
-export function getLevelBadgeClass(level: StrengthLevelName): string {
-  switch (level) {
-    case 'beginner':
-      return 'bg-zinc-500/20 text-zinc-300'
-    case 'novice':
-      return 'bg-emerald-500/20 text-emerald-300'
-    case 'intermediate':
-      return 'bg-sky-500/20 text-sky-300'
-    case 'advanced':
-      return 'bg-violet-500/20 text-violet-300'
-    case 'elite':
-      return 'bg-amber-500/20 text-amber-300'
-  }
-}

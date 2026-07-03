@@ -15,7 +15,7 @@ function storageAvailable(): boolean {
   }
 }
 
-export function getSettingsVersion(): number {
+function getSettingsVersion(): number {
   if (!storageAvailable()) return 0
   const v = localStorage.getItem(VERSION_KEY)
   return v ? parseInt(v, 10) : 0
@@ -74,9 +74,3 @@ export function saveDefaultSynergistWeight(weight: number): void {
   localStorage.setItem(DEFAULT_SYNERGIST_WEIGHT_KEY, String(Math.max(0, Math.min(1, weight))))
 }
 
-export function resetToDefaults(): void {
-  if (!storageAvailable()) return
-  localStorage.removeItem(EXERCISE_MUSCLE_OVERRIDE_KEY)
-  localStorage.removeItem(EXERCISE_SYNERGIST_OVERRIDE_KEY)
-  localStorage.removeItem(DEFAULT_SYNERGIST_WEIGHT_KEY)
-}

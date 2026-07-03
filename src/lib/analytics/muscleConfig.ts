@@ -1,4 +1,4 @@
-export interface MuscleRule {
+interface MuscleRule {
   pattern: RegExp
   primary: string
   secondary?: string
@@ -123,19 +123,10 @@ export const RAW_MAP: Record<string, RawEntry> = {
 }
 
 export const EXERCISE_MUSCLE_MAP: Record<string, string> = {}
-const LOWER_MAP: Record<string, string> = {}
 
 for (const [name, entry] of Object.entries(RAW_MAP)) {
   const muscle = entry.primaryMuscles[0] || 'Other'
   EXERCISE_MUSCLE_MAP[name] = muscle
-  LOWER_MAP[name.toLowerCase()] = muscle
-}
-
-export function lookupExerciseMuscle(exercise: string): string | null {
-  if (!exercise) return null
-  const exact = EXERCISE_MUSCLE_MAP[exercise]
-  if (exact) return exact
-  return LOWER_MAP[exercise.toLowerCase()] ?? null
 }
 
 export const MUSCLE_COLORS: Record<string, string> = {
