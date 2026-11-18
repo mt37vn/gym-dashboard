@@ -77,7 +77,9 @@ export function classifyDetailedMuscle(name: string): DetailedMuscleResult {
 
   if (overriddenMuscles && overriddenMuscles.length > 0) {
     const rawEntry = RAW_MAP[name]
-    const synergists = synergistOverride ?? (rawEntry ? rawEntry.secondaryMuscles.map(m => ({ muscle: m, weight: defaultWeight })) : [])
+    const extraPrimaries = overriddenMuscles.slice(1).map(m => ({ muscle: m, weight: 1 }))
+    const secondaries = synergistOverride ?? (rawEntry ? rawEntry.secondaryMuscles.map(m => ({ muscle: m, weight: defaultWeight })) : [])
+    const synergists = [...extraPrimaries, ...secondaries]
     const result = {
       primary: overriddenMuscles[0],
       secondary: synergists[0]?.muscle || null,
@@ -91,7 +93,9 @@ export function classifyDetailedMuscle(name: string): DetailedMuscleResult {
   const rawEntry = RAW_MAP[name] || RAW_MAP[Object.keys(RAW_MAP).find(k => k.toLowerCase() === name.toLowerCase()) || '']
   if (rawEntry) {
     const primary = rawEntry.primaryMuscles[0] || 'Other'
-    const synergists = synergistOverride ?? rawEntry.secondaryMuscles.map(m => ({ muscle: m, weight: defaultWeight }))
+    const extraPrimaries = rawEntry.primaryMuscles.slice(1).map(m => ({ muscle: m, weight: 1 }))
+    const secondaries = synergistOverride ?? rawEntry.secondaryMuscles.map(m => ({ muscle: m, weight: defaultWeight }))
+    const synergists = [...extraPrimaries, ...secondaries]
     const result = {
       primary,
       secondary: synergists[0]?.muscle || null,
